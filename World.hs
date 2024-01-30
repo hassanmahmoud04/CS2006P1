@@ -1,5 +1,7 @@
 module World where
 
+import Data.List 
+
 data Object = Obj { obj_name :: String,
                     obj_longname :: String,
                     obj_desc :: String }
@@ -18,13 +20,31 @@ data Room = Room { room_desc :: String,
                    objects :: [Object] }
    deriving Eq
 
-data GameData = GameData { location_id :: String, -- where player is
+data GameData = GameData { location_id :: String,
                            world :: [(String, Room)],
-                           inventory :: [Object], -- objects player has
-                           poured :: Bool, -- coffee is poured
-                           caffeinated :: Bool, -- coffee is drunk
-                           finished :: Bool -- set to True at the end
-                         }
+                           inventory :: [Object],
+                           poured :: Bool,
+                           caffeinated :: Bool,
+                           finished :: Bool }
+   deriving Eq
+
+-- Function to get the description of an object
+objectDesc :: Object -> String
+objectDesc obj = obj_desc obj
+
+-- Function to update a room in the world
+updateRoomInWorld :: String -> Room -> [(String, Room)] -> [(String, Room)]
+updateRoomInWorld roomId updatedRoom = map updateRoom
+  where
+    updateRoom (rId, room) 
+      | rId == roomId = (roomId, updatedRoom)
+      | otherwise     = (rId, room)
+
+objectData :: String -> Room -> Object
+objectData objName room = 
+    case find (\obj -> obj_name obj == objName) (objects room) of
+        Just obj -> obj
+        Nothing -> error $ "Object " ++ objName ++ " not found in room."
 
 won :: GameData -> Bool
 won gd = location_id gd == "street"
@@ -36,7 +56,6 @@ instance Show Room where
              showInv xs = "\n\nYou can see: " ++ showInv' xs
              showInv' [x] = show x
              showInv' (x:xs) = show x ++ ", " ++ showInv' xs
-                                  
 
 instance Show GameData where
     show gd = show (getRoomData gd)
@@ -68,7 +87,6 @@ hall = Room "You are in the hallway. The front door is closed. "
             []
 
 -- New data about the hall for when we open the door
-
 openedhall = "You are in the hallway. The front door is open. "
 openedexits = [Exit "east" "To the east is a kitchen. " "kitchen",
                Exit "out" "You can go outside. " "street"]
@@ -85,7 +103,27 @@ gameworld = [("bedroom", bedroom),
 initState :: GameData
 initState = GameData "bedroom" gameworld [] False False False
 
-{- Return the room the player is currently in. -}
-
 getRoomData :: GameData -> Room
 getRoomData gd = maybe undefined id (lookup (location_id gd) (world gd))
+
+-- New helper functions
+objectHere :: String -> Room -> Bool
+objectHere objName room = any (\obj -> obj_name obj == objName) (objects room)
+
+removeObject :: String -> Room -> Room
+removeObject objName room = room { objects = filter (\obj -> obj_name obj /= objName) (objects room) }
+
+addObject :: Object -> Room -> Room
+addObject obj room = room { objects = obj : objects room }
+
+findObject :: String -> [Object] -> Maybe Object
+findObject objName objs = find (\obj -> obj_name obj == objName) objs
+
+carrying :: GameData -> String -> Bool
+carrying gd objName = any (\obj -> obj_name obj == objName) (inventory gd)
+
+addInv :: GameData -> Object -> GameData
+addInv gd obj = gd { inventory = obj : inventory gd }
+
+removeInv :: GameData -> String -> GameData
+removeInv gd objName = gd { inventory = filter (\obj -> obj_name obj /= objName) (inventory gd) }

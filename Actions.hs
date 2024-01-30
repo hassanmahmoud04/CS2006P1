@@ -1,173 +1,101 @@
 module Actions where
 
-import World
+import Data.List (find)
+import qualified World as W
 
-actions :: String -> Maybe Action
-actions "go"      = Just go
+data GameObj = Coffee | Mug | Door | Key deriving (Eq, Show)
+data Direction = North | South | East | West deriving (Eq, Show)
+data Command = Go Direction | Get GameObj | Drop GameObj | Pour GameObj | Drink GameObj | Open GameObj | Examine GameObj | Inventory | Quit deriving (Eq, Show)
+
+type Action  = GameObj -> W.GameData -> (W.GameData, String)
+
+-- Implement the go action
+go :: Direction -> W.GameData -> (W.GameData, String)
+go dir state = case dir of
+    North -> move "north" state
+    South -> move "south" state
+    East  -> move "east" state
+    West  -> move "west" state
+  where
+    move direction state = case find ((== direction) . W.exit_dir) (W.exits (W.getRoomData state)) of
+        Just exit -> (state { W.location_id = W.room exit }, "You go " ++ direction)
+        Nothing -> (state, "You can't go that way.")
+
+-- Implement the get action
+get :: GameObj -> W.GameData -> (W.GameData, String)
+get obj state =
+  let currentRoom = W.getRoomData state
+      objectName = show obj
+  in if W.objectHere objectName currentRoom
+     then let updatedRoom = W.removeObject objectName currentRoom
+              updatedState = W.addInv state (W.objectData objectName currentRoom)
+              newWorld = W.updateRoomInWorld (W.location_id state) updatedRoom (W.world state)
+          in (updatedState { W.world = newWorld }, objectName ++ " taken.")
+     else (state, "I don't see a " ++ objectName ++ " here.")
+
+-- Implement the put (drop) action
+put :: GameObj -> W.GameData -> (W.GameData, String)
+put obj state =
+  let currentRoom = W.getRoomData state
+      objectName = show obj
+  in if W.carrying state objectName
+     then let updatedRoom = W.addObject (W.objectData objectName currentRoom) currentRoom
+              updatedState = W.removeInv state objectName
+              newWorld = W.updateRoomInWorld (W.location_id state) updatedRoom (W.world state)
+          in (updatedState { W.world = newWorld }, "You drop the " ++ objectName ++ ".")
+     else (state, "You are not carrying a " ++ objectName ++ ".")
+
+-- Implement the pour action
+pour :: GameObj -> W.GameData -> (W.GameData, String)
+pour Coffee state =
+  if W.carrying state "Coffee" && W.carrying state "Mug"
+  then (state { W.poured = True }, "You pour the coffee into the mug.")
+  else (state, "You can't pour coffee here.")
+
+-- Implement the drink action
+drink :: GameObj -> W.GameData -> (W.GameData, String)
+drink Mug state =
+  if W.poured state
+  then (state { W.caffeinated = True }, "You drink the coffee. You feel energized!")
+  else (state, "There is nothing in the mug to drink.")
+
+-- Implement the open action
+open :: GameObj -> W.GameData -> (W.GameData, String)
+open Door state =
+  if W.caffeinated state
+  then (state { W.finished = True }, "You open the door and step outside.")
+  else (state, "The door is locked. You need some coffee to get going.")
+
+-- Implement the examine action
+examine :: GameObj -> W.GameData -> (W.GameData, String)
+examine obj state =
+  let currentRoom = W.getRoomData state
+      objectName = show obj
+  in if W.objectHere objectName currentRoom || W.carrying state objectName
+     then (state, W.objectDesc (W.objectData objectName currentRoom))
+     else (state, "I don't see a " ++ objectName ++ " here.")
+
+-- Implement the inventory command
+inv :: W.GameData -> (W.GameData, String)
+inv state =
+  let inventoryList = map W.obj_longname (W.inventory state)
+  in (state, "You are carrying: " ++ unwords inventoryList)
+
+-- Implement the quit command
+quit :: W.GameData -> (W.GameData, String)
+quit state = (state { W.finished = True }, "Quitting the game.")
+
+-- Map string commands to their respective functions
+actions :: String -> Maybe (GameObj -> W.GameData -> (W.GameData, String))
 actions "get"     = Just get
 actions "drop"    = Just put
 actions "pour"    = Just pour
-actions "examine" = Just examine
 actions "drink"   = Just drink
 actions "open"    = Just open
+actions "examine" = Just examine
 actions _         = Nothing
 
-commands :: String -> Maybe Command
+commands :: String -> Maybe (W.GameData -> (W.GameData, String))
 commands "quit"      = Just quit
 commands "inventory" = Just inv
 commands _           = Nothing
-
-{- Given a direction and a room to move from, return the room id in
-   that direction, if it exists.
-
-e.g. try these at the ghci prompt
-
-*Main> move "north" bedroom
-Just "kitchen"
-
-*Main> move "north" kitchen
-Nothing
--}
-
-move :: String -> Room -> Maybe String
-move dir rm = undefined
-
-{- Return True if the object appears in the room. -}
-
-objectHere :: String -> Room -> Bool
-objectHere o rm = undefined
-
-{- Given an object id and a room description, return a new room description
-   without that object -}
-
-removeObject :: String -> Room -> Room
-removeObject o rm = undefined
-
-{- Given an object and a room description, return a new room description
-   with that object added -}
-
-addObject :: Object -> Room -> Room
-addObject o rm = undefined
-
-{- Given an object id and a list of objects, return the object data. Note
-   that you can assume the object is in the list (i.e. that you have
-   checked with 'objectHere') -}
-
-findObj :: String -> [Object] -> Object
-findObj o ds = undefined
-
-{- Use 'findObj' to find an object in a room description -}
-
-objectData :: String -> Room -> Object
-objectData o rm = undefined
-
-{- Given a game state and a room id, replace the old room information with
-   new data. If the room id does not already exist, add it. -}
-
-updateRoom :: GameData -> String -> Room -> GameData
-updateRoom gd rmid rmdata = undefined
-
-{- Given a game state and an object id, find the object in the current
-   room and add it to the player's inventory -}
-
-addInv :: GameData -> String -> GameData
-addInv gd obj = undefined
-
-{- Given a game state and an object id, remove the object from the
-   inventory. Hint: use filter to check if something should still be in
-   the inventory. -}
-
-removeInv :: GameData -> String -> GameData
-removeInv gd obj = undefined
-
-{- Does the inventory in the game state contain the given object? -}
-
-carrying :: GameData -> String -> Bool
-carrying gd obj = undefined
-
-{-
-Define the "go" action. Given a direction and a game state, update the game
-state with the new location. If there is no exit that way, report an error.
-Remember Actions return a 2-tuple of GameData and String. The String is
-a message reported to the player.
-
-e.g.
-*Main> go "north" initState
-(kitchen,"OK")
-
--}
-
-go :: Action
-go dir state = undefined
-
-{- Remove an item from the current room, and put it in the player's inventory.
-   This should only work if the object is in the current room. Use 'objectHere'
-   and 'removeObject' to remove the object, and 'updateRoom' to replace the
-   room in the game state with the new room which doesn't contain the object.
-
-   Hints: you will need to take care to update things in the right order here!
-    * create a new state with the updated inventory (use 'objectData')
-    * create a new room without the object (use 'removeObject')
-    * update the game state with this new room in the current location
-      (use 'location_id' to find where the player is)
--}
-
-get :: Action
-get obj state = undefined
-
-{- Remove an item from the player's inventory, and put it in the current room.
-   Similar to 'get' but in reverse - find the object in the inventory, create
-   a new room with the object in, update the game world with the new room.
--}
-
-put :: Action
-put obj state = undefined
-
-{- Don't update the state, just return a message giving the full description
-   of the object. As long as it's either in the room or the player's 
-   inventory! -}
-
-examine :: Action
-examine obj state = undefined
-
-{- Pour the coffee. Obviously, this should only work if the player is carrying
-   both the pot and the mug. This should update the status of the "mug"
-   object in the player's inventory to be a new object, a "full mug".
--}
-
-pour :: Action
-pour obj state = undefined
-
-{- Drink the coffee. This should only work if the player has a full coffee 
-   mug! Doing this is required to be allowed to open the door. Once it is
-   done, also update the 'caffeinated' flag in the game state.
-
-   Also, put the empty coffee mug back in the inventory!
--}
-
-drink :: Action
-drink obj state = undefined
-
-{- Open the door. Only allowed if the player has had coffee! 
-   This should change the description of the hall to say that the door is open,
-   and add an exit out to the street.
-
-   Use 'updateRoom' once you have made a new description. You can use 
-   'openedhall' and 'openedexits' from World.hs for this.
--}
-
-open :: Action
-open obj state = undefined
-
-{- Don't update the game state, just list what the player is carrying -}
-
-inv :: Command
-inv state = (state, showInv (inventory state))
-   where showInv [] = "You aren't carrying anything"
-         showInv xs = "You are carrying:\n" ++ showInv' xs
-         showInv' [x] = obj_longname x
-         showInv' (x:xs) = obj_longname x ++ "\n" ++ showInv' xs
-
-quit :: Command
-quit state = (state { finished = True }, "Bye bye")
-

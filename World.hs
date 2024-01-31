@@ -116,35 +116,5 @@ initState :: GameData
 initState = GameData "bedroom" gameworld [] False False False
 
 -- Function to get room data based on current game state.
--- works using lookup function and checking location id we are storing in world
 getRoomData :: GameData -> Room
 getRoomData gd = maybe undefined id (lookup (location_id gd) (world gd))
-
--- New helper functions
--- Function to check if an object is in a room.
-objectHere :: String -> Room -> Bool
-objectHere objName room = any (\obj -> obj_name obj == objName) (objects room)
-
--- Function to remove an object from a room.
-removeObject :: String -> Room -> Room
-removeObject objName room = room { objects = filter (\obj -> obj_name obj /= objName) (objects room) }
-
--- Function to add an object to a room.
-addObject :: Object -> Room -> Room
-addObject obj room = room { objects = obj : objects room }
-
--- Function to find an object in a list of objects.
-findObject :: String -> [Object] -> Maybe Object
-findObject objName objs = find (\obj -> obj_name obj == objName) objs
-
--- Function to check if the player is carrying an object.
-carrying :: GameData -> String -> Bool
-carrying gd objName = any (\obj -> obj_name obj == objName) (inventory gd)
-
--- Function to add an object to the player's inventory.
-addInv :: GameData -> Object -> GameData
-addInv gd obj = gd { inventory = obj : inventory gd }
-
--- Function to remove an object from the player's inventory.
-removeInv :: GameData -> String -> GameData
-removeInv gd objName = gd { inventory = filter (\obj -> obj_name obj /= objName) (inventory gd) }

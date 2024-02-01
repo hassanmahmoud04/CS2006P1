@@ -1,64 +1,88 @@
--- Adventure.hs
-module Adventure where
+module Main where
 
-import World   -- Contains the game world's data structures and logic.
-import Actions -- Includes definitions for game actions and helper functions.
-
+import World    -- Contains the game world's data structures and logic.
+import Actions  -- Includes definitions for game actions and helper functions.
 import Control.Monad
 import System.IO
 import System.Exit
+import Data.Char (toLower, isSpace) -- For case-insensitive input processing and trimming spaces.
+import qualified World as W
+import System.IO (hFlush, stdout)
+import Actions (go, get, put)
 
--- Define the winning message displayed when the game is won.
-winmessage = "Congratulations, you have made it out of the house.\n" ++
-             "Now go to your lectures..."
 
--- Custom function to parse a string into a `Direction` data type.
+-- Winning message displayed upon game completion.
+winmessage = "Congratulations, you have made it out of the house.\nNow go to your lectures..."
+
+-- Parses user input into a `Direction` data type, handling input case-insensitively.
 parseDirection :: String -> Maybe Direction
-parseDirection str = case str of
-    "North" -> Just North
-    "South" -> Just South
-    "East"  -> Just East
-    "West"  -> Just West
+parseDirection str = case map toLower str of
+    "north" -> Just North
+    "south" -> Just South
+    "east"  -> Just East
+    "west"  -> Just West
     _       -> Nothing
 
--- Custom function to parse a string into a `GameObj` data type.
-parseGameObj :: String -> Maybe GameObj
-parseGameObj str = case str of
-    "Coffee" -> Just Coffee
-    "Mug"    -> Just Mug
-    "Door"   -> Just Door
-    "Key"    -> Just Key
-    _        -> Nothing
+process :: W.GameData -> String -> (W.GameData, String)
+process state input =
+    let (cmd:rest) = words $ map toLower input
+        action = unwords rest
+    in case cmd of
+        "go" -> maybe (state, "I don't understand that command.") (`go` state) (parseDirection action)
+        "get" -> handleGetObject action state
+        "drop" -> handleDropObject action state
+        _ -> (state, "I don't understand that command.")
 
--- Processes a command and returns a new game state and a message for the user.
-process :: GameData -> [String] -> (GameData, String)
-process state (cmd:args) =
-    case parseCommand cmd args of
-        Just command -> command state
-        Nothing -> (state, "I don't understand that command.")
-  where
-    parseCommand :: String -> [String] -> Maybe (GameData -> (GameData, String))
-    parseCommand "go" [dir] = fmap go (parseDirection dir)
-    parseCommand "get" [obj] = fmap get (parseGameObj obj)
-    parseCommand "drop" [obj] = fmap put (parseGameObj obj)
-    -- Additional command parsing logic goes here...
-    parseCommand _ _ = Nothing
+handleGetObject :: String -> W.GameData -> (W.GameData, String)
+handleGetObject action state =
+    case stringToGameObj $ map toLower (trim action) of
+        Just obj -> get obj state
+        Nothing -> (state, "I don't recognize that object.")
 
--- REPL function to interact with the game
-repl :: GameData -> IO GameData
-repl state | finished state = return state
-repl state = do
-    print state
-    putStr "What now? "
-    hFlush stdout
-    input <- getLine
-    let (state', msg) = process state (words input)
-    putStrLn msg
-    if won state' then putStrLn winmessage >> return state'
-    else repl state'
+handleDropObject :: String -> W.GameData -> (W.GameData, String)
+handleDropObject action state =
+    case stringToGameObj action of
+        Just obj -> put obj state
+        Nothing -> if action == "coffee mug" then put CoffeeMug state
+                   else (state, "You can't drop what you don't have.")
 
--- Main function
+
+-- The function to display available actions based on the current game state
+displayAvailableActions :: W.GameData -> String
+displayAvailableActions state =
+  let currentRoom = W.getRoomData state
+      exitsDescription = "Exits: " ++ unwords (map (\exit -> W.exit_dir exit) (W.exits currentRoom)) ++ ". "
+      objectsDescription = "Objects: " ++ unwords (map (\obj -> W.obj_name obj) (W.objects currentRoom)) ++ "."
+  in exitsDescription ++ objectsDescription
+
+stringToGameObj :: String -> Maybe GameObj
+stringToGameObj name = case map toLower (trim name) of
+    "coffee mug" -> Just CoffeeMug
+    "full coffee mug" -> Just FullCoffeeMug
+    "coffee pot" -> Just CoffeePot
+    -- Add more mappings as necessary
+    _ -> Nothing
+
+-- Helper function to trim spaces
+trim :: String -> String
+trim = f . f
+   where f = reverse . dropWhile isSpace
+
+-- REPL function to interact with the game, showing available actions
+repl :: W.GameData -> IO W.GameData
+repl state 
+    | W.finished state = putStrLn winmessage >> return state
+    | otherwise = do
+        putStrLn $ show state ++ "\n" ++ displayAvailableActions state
+        putStr "What now? "
+        hFlush stdout
+        input <- getLine
+        let (state', msg) = process state input
+        putStrLn msg
+        repl state'
+
+-- Main function to start the game loop
 main :: IO ()
 main = do
-    repl initState
+    _ <- repl W.initState
     return ()

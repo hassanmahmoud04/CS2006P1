@@ -2,9 +2,10 @@ module Actions where
 
 import Data.List (find)
 import qualified World as W
+import Data.Char (toLower)
 
 -- Enumeration of game objects.
-data GameObj = Coffee | Mug | Door | Key deriving (Eq, Show)
+data GameObj = CoffeeMug | FullCoffeeMug | CoffeePot | Door deriving (Eq)
 -- Enumeration of directions.
 data Direction = North | South | East | West deriving (Eq, Show)
 -- Enumeration of possible commands in the game.
@@ -29,36 +30,44 @@ go dir state = case dir of
 get :: GameObj -> W.GameData -> (W.GameData, String)
 get obj state =
   let currentRoom = W.getRoomData state
-      objectName = show obj
-  in if objectHere objectName currentRoom
-     then let updatedRoom = removeObject objectName currentRoom
-              updatedState = addInv state (W.objectData objectName currentRoom)
-              newWorld = W.updateRoomInWorld (W.location_id state) updatedRoom (W.world state)
-          in (updatedState { W.world = newWorld }, objectName ++ " taken.")
-     else (state, "I don't see a " ++ objectName ++ " here.")
+      objName = show obj -- Use the exact string representation of GameObj
+  in case find (\o -> W.obj_name o == objName) (W.objects currentRoom) of
+        Just o -> let updatedRoom = removeObject (W.obj_name o) currentRoom
+                      updatedState = addInv state o
+                      newWorld = W.updateRoomInWorld (W.location_id state) updatedRoom (W.world state)
+                  in (updatedState { W.world = newWorld }, objName ++ " taken.")
+        Nothing -> (state, "I don't see \"" ++ objName ++ "\" here.")
+
 
 -- Implement the 'put' (drop) action.
 put :: GameObj -> W.GameData -> (W.GameData, String)
 put obj state =
-  let currentRoom = W.getRoomData state
-      objectName = show obj
-  in if carrying state objectName
-     then let updatedRoom = addObject (W.objectData objectName currentRoom) currentRoom
-              updatedState = removeInv state objectName
-              newWorld = W.updateRoomInWorld (W.location_id state) updatedRoom (W.world state)
-          in (updatedState { W.world = newWorld }, "You drop the " ++ objectName ++ ".")
-     else (state, "You are not carrying a " ++ objectName ++ ".")
+  let objName = show obj -- Convert GameObj to String for matching.
+      inventoryItem = find (\item -> W.obj_name item == objName) (W.inventory state)
+  in case inventoryItem of
+        Just item -> let updatedRoom = addObject item (W.getRoomData state)
+                         updatedState = removeInv state (W.obj_name item)
+                         newWorld = W.updateRoomInWorld (W.location_id state) updatedRoom (W.world state)
+                     in (updatedState { W.world = newWorld }, objName ++ " dropped.")
+        Nothing -> (state, "You are not carrying \"" ++ objName ++ "\".")
+
+instance Show GameObj where
+    show CoffeeMug = "coffee mug"
+    show FullCoffeeMug = "full coffee mug"
+    show CoffeePot = "coffee pot"
+    show Door = "door"  -- You might want to add this mapping
+
 
 -- Implement the 'pour' action.
 pour :: GameObj -> W.GameData -> (W.GameData, String)
-pour Coffee state =
+pour CoffeeMug state =
   if carrying state "Coffee" && carrying state "Mug"
   then (state { W.poured = True }, "You pour the coffee into the mug.")
   else (state, "You can't pour coffee here.")
 
 -- Implement the 'drink' action.
 drink :: GameObj -> W.GameData -> (W.GameData, String)
-drink Mug state =
+drink FullCoffeeMug state =
   if W.poured state
   then (state { W.caffeinated = True }, "You drink the coffee. You feel energized!")
   else (state, "There is nothing in the mug to drink.")
@@ -91,13 +100,14 @@ quit state = (state { W.finished = True }, "Quitting the game.")
 
 -- Map string commands to their respective action functions.
 actions :: String -> Maybe (GameObj -> W.GameData -> (W.GameData, String))
-actions "get"     = Just get
-actions "drop"    = Just put
-actions "pour"    = Just pour
-actions "drink"   = Just drink
-actions "open"    = Just open
-actions "examine" = Just examine
-actions _         = Nothing
+actions cmd = case map toLower cmd of
+  "get" -> Just get
+  "drop" -> Just put
+  "pour" -> Just pour
+  "drink" -> Just drink
+  "open" -> Just open
+  "examine" -> Just examine
+  _ -> Nothing
 
 -- Map string commands to their respective game command functions.
 commands :: String -> Maybe (W.GameData -> (W.GameData, String))

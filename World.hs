@@ -1,4 +1,15 @@
-module World where
+module World
+  ( Object(..)
+  , Exit(..)
+  , Room(..)
+  , GameData(..)
+  , objectDesc
+  , updateRoomInWorld
+  , objectData
+  , won
+  , initState
+  , getRoomData
+  ) where
 
 import Data.List -- Importing List module for list manipulation functions.
 
@@ -77,9 +88,10 @@ type Command = GameData -> (GameData, String)
 
 -- Predefined objects in the game.
 mug, fullmug, coffeepot :: Object
-mug       = Obj "mug" "a coffee mug" "A coffee mug"
-fullmug   = Obj "mug" "a full coffee mug" "A coffee mug containing freshly brewed coffee"
-coffeepot = Obj "coffee" "a pot of coffee" "A pot containing freshly brewed coffee"
+mug = Obj "coffee mug" "a coffee mug" "A coffee mug"
+fullmug   = Obj "full coffee mug" "a full coffee mug" "A coffee mug containing freshly brewed coffee"
+coffeepot = Obj "coffee pot" "a pot of coffee" "A pot containing freshly brewed coffee"
+
 
 -- Predefined rooms in the game.
 bedroom, kitchen, hall, street :: Room

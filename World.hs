@@ -51,9 +51,10 @@ mug, fullmug, coffeepot, keter :: Object
 mug       = Obj "mug" "a coffee mug" "A coffee mug"
 fullmug   = Obj "full-mug" "a full coffee mug" "A coffee mug containing freshly brewed coffee"
 coffeepot = Obj "coffee" "a pot of coffee" "A pot containing freshly brewed coffee"
-keter     = Obj "orb" "a peculiar fleshy crimson orb" "A dark crimson orb that seems to be made of organic matter. It seems to perfectly fit into something...?"
+keter     = Obj "orb" "a peculiar fleshy crimson orb" "A dark crimson orb that seems to be made of organic matter. \nIt seems to perfectly fit into something...?"
+dagger    = Obj "dagger" "an ashen ritual dagger" "A patterned obsidian ritual dagger, embossed with the crimson orb. \nHolding it makes you feel faint."
 
-bedroom, kitchen, hall, street, altar :: Room
+bedroom, kitchen, hall, street, altar, shrine :: Room
 
 bedroom = Room "You are in your bedroom."
                [Exit "north" "To the north is a kitchen. " "kitchen"]
@@ -65,9 +66,13 @@ kitchen = Room "You are in the kitchen."
                 Exit "east" "To the east is the altar room." "altar"]
                [coffeepot]
 
-altar = Room "You are in the altar room. You forget why or when you added this to the house."
-             [Exit "west" "To the west is the kitchen. " "kitchen"]
+altar = Room "You are in the altar room. You forget why or when you added this to the house. \nThe door has disappeared behind you."
+             [Exit "east" "To the east is an ominous arched tunnel snaking downwards. " "shrine"]
              [keter]
+
+shrine = Room "At the end of the tunnel you reach a shrine to... you can't imagine what. \nA blackened marble sculpture depicts a frightening amalgam of hideous warped flesh. \nOne of its many 'arms' is outstretched, reaching for something..."
+              [Exit "west" "To the west is the tunnel you entered from. " "altar"]
+              []
 
 hall = Room "You are in the hallway. The front door is closed. "
             [Exit "east" "To the east is a kitchen. " "kitchen"]
@@ -87,7 +92,8 @@ gameworld = [("bedroom", bedroom),
              ("kitchen", kitchen),
              ("hall", hall),
              ("street", street),
-             ("altar", altar)]
+             ("altar", altar),
+             ("shrine", shrine)]
 
 initState :: GameData
 initState = GameData "bedroom" gameworld [] False False False

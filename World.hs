@@ -51,9 +51,9 @@ mug, fullmug, coffeepot, keter :: Object
 mug       = Obj "mug" "a coffee mug" "A coffee mug"
 fullmug   = Obj "full-mug" "a full coffee mug" "A coffee mug containing freshly brewed coffee"
 coffeepot = Obj "coffee" "a pot of coffee" "A pot containing freshly brewed coffee"
-keter     = Obj "jW$Ikd2093;aPd" "ITHURTSITHURTSITHURTS" "ITHURTSITHURTSITHURTSITHURTSITHURTSITHURTS"
+keter     = Obj "orb" "a peculiar fleshy crimson orb" "A dark crimson orb that seems to be made of organic matter. It seems to perfectly fit into something...?"
 
-bedroom, kitchen, hall, street :: Room
+bedroom, kitchen, hall, street, altar :: Room
 
 bedroom = Room "You are in your bedroom."
                [Exit "north" "To the north is a kitchen. " "kitchen"]
@@ -61,8 +61,13 @@ bedroom = Room "You are in your bedroom."
 
 kitchen = Room "You are in the kitchen."
                [Exit "south" "To the south is your bedroom. " "bedroom",
-                Exit "west" "To the west is a hallway. " "hall"]
+                Exit "west" "To the west is a hallway. " "hall",
+                Exit "east" "To the east is the altar room." "altar"]
                [coffeepot]
+
+altar = Room "You are in the altar room. You forget why or when you added this to the house."
+             [Exit "west" "To the west is the kitchen. " "kitchen"]
+             [keter]
 
 hall = Room "You are in the hallway. The front door is closed. "
             [Exit "east" "To the east is a kitchen. " "kitchen"]
@@ -81,7 +86,8 @@ street = Room "You have made it out of the house."
 gameworld = [("bedroom", bedroom),
              ("kitchen", kitchen),
              ("hall", hall),
-             ("street", street)]
+             ("street", street),
+             ("altar", altar)]
 
 initState :: GameData
 initState = GameData "bedroom" gameworld [] False False False

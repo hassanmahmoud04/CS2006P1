@@ -1,62 +1,34 @@
 module World where
 
-import Data.List -- Importing List module for list manipulation functions.
+data Object = Obj { obj_name :: String,
+                    obj_longname :: String,
+                    obj_desc :: String }
+   deriving Eq
 
--- Data structure for objects in the game.
-data Object = Obj { obj_name :: String,      -- Name of the object.
-                    obj_longname :: String,  -- Long (descriptive) name of the object.
-                    obj_desc :: String }     -- Description of the object.
-   deriving Eq -- Making Object instances comparable for equality.
-
--- Custom show instance for objects, to display their long names.
 instance Show Object where
    show obj = obj_longname obj
 
--- Data structure for exits from rooms.
-data Exit = Exit { exit_dir :: String,       -- Direction of the exit.
-                   exit_desc :: String,      -- Description of the exit.
-                   room :: String }          -- Room that this exit leads to.
+data Exit = Exit { exit_dir :: String,
+                   exit_desc :: String,
+                   room :: String }
    deriving Eq
 
--- Data structure for rooms in the game.
-data Room = Room { room_desc :: String,      -- Description of the room.
-                   exits :: [Exit],          -- Exits from the room.
-                   objects :: [Object] }     -- Objects in the room.
+data Room = Room { room_desc :: String,
+                   exits :: [Exit],
+                   objects :: [Object] }
    deriving Eq
 
--- Data structure for game data/state.
-data GameData = GameData { location_id :: String,   -- Current location ID.
-                           world :: [(String, Room)], -- Mapping of room IDs to rooms.
-                           inventory :: [Object],     -- Player's inventory.
-                           poured :: Bool,            -- Status flag (e.g., whether coffee has been poured).
-                           caffeinated :: Bool,       -- Status flag (e.g., whether player is caffeinated).
-                           finished :: Bool }         -- Status flag to indicate if the game is finished.
-   deriving Eq
+data GameData = GameData { location_id :: String, -- where player is
+                           world :: [(String, Room)],
+                           inventory :: [Object], -- objects player has
+                           poured :: Bool, -- coffee is poured
+                           caffeinated :: Bool, -- coffee is drunk
+                           finished :: Bool -- set to True at the end
+                         }
 
--- Function to get the description of an object.
-objectDesc :: Object -> String
-objectDesc obj = obj_desc obj
-
--- Function to update a room in the game world.
-updateRoomInWorld :: String -> Room -> [(String, Room)] -> [(String, Room)]
-updateRoomInWorld roomId updatedRoom = map updateRoom
-  where
-    updateRoom (rId, room) 
-      | rId == roomId = (roomId, updatedRoom) -- Update the specified room.
-      | otherwise     = (rId, room)           -- Keep other rooms as they are.
-
--- Function to find an object's data in a room.
-objectData :: String -> Room -> Object
-objectData objName room = 
-    case find (\obj -> obj_name obj == objName) (objects room) of
-        Just obj -> obj
-        Nothing -> error $ "Object " ++ objName ++ " not found in room."
-
--- Function to check if the game has been won.
 won :: GameData -> Bool
 won gd = location_id gd == "street"
 
--- Custom show instance for rooms.
 instance Show Room where
     show (Room desc exits objs) = desc ++ "\n" ++ concatMap exit_desc exits ++
                                   showInv objs
@@ -64,25 +36,25 @@ instance Show Room where
              showInv xs = "\n\nYou can see: " ++ showInv' xs
              showInv' [x] = show x
              showInv' (x:xs) = show x ++ ", " ++ showInv' xs
+                                  
 
--- Custom show instance for game data.
 instance Show GameData where
     show gd = show (getRoomData gd)
 
--- Type alias for actions that modify an object and update the game state.
+-- Things which do something to an object and update the game state
 type Action  = String -> GameData -> (GameData, String)
 
--- Type alias for commands that just update the game state.
+-- Things which just update the game state
 type Command = GameData -> (GameData, String)
 
--- Predefined objects in the game.
-mug, fullmug, coffeepot :: Object
+mug, fullmug, coffeepot, keter :: Object
 mug       = Obj "mug" "a coffee mug" "A coffee mug"
-fullmug   = Obj "mug" "a full coffee mug" "A coffee mug containing freshly brewed coffee"
+fullmug   = Obj "full-mug" "a full coffee mug" "A coffee mug containing freshly brewed coffee"
 coffeepot = Obj "coffee" "a pot of coffee" "A pot containing freshly brewed coffee"
+keter     = Obj "jW$Ikd2093;aPd" "ITHURTSITHURTSITHURTS" "ITHURTSITHURTSITHURTSITHURTSITHURTSITHURTS"
 
--- Predefined rooms in the game.
 bedroom, kitchen, hall, street :: Room
+
 bedroom = Room "You are in your bedroom."
                [Exit "north" "To the north is a kitchen. " "kitchen"]
                [mug]
@@ -96,7 +68,8 @@ hall = Room "You are in the hallway. The front door is closed. "
             [Exit "east" "To the east is a kitchen. " "kitchen"]
             []
 
--- New data about the hall when the door is opened.
+-- New data about the hall for when we open the door
+
 openedhall = "You are in the hallway. The front door is open. "
 openedexits = [Exit "east" "To the east is a kitchen. " "kitchen",
                Exit "out" "You can go outside. " "street"]
@@ -105,16 +78,15 @@ street = Room "You have made it out of the house."
               [Exit "in" "You can go back inside if you like. " "hall"]
               []
 
--- World data: mapping of room names to room data.
 gameworld = [("bedroom", bedroom),
              ("kitchen", kitchen),
              ("hall", hall),
              ("street", street)]
 
--- Initial game state.
 initState :: GameData
 initState = GameData "bedroom" gameworld [] False False False
 
--- Function to get room data based on current game state.
+{- Return the room the player is currently in. -}
+
 getRoomData :: GameData -> Room
 getRoomData gd = maybe undefined id (lookup (location_id gd) (world gd))

@@ -47,18 +47,24 @@ type Action  = String -> GameData -> (GameData, String)
 -- Things which just update the game state
 type Command = GameData -> (GameData, String)
 
-mug, fullmug, coffeepot, keter :: Object
+mug, fullmug, coffeepot, keter, dagger, pill :: Object
 mug       = Obj "mug" "a coffee mug" "A coffee mug"
 fullmug   = Obj "full-mug" "a full coffee mug" "A coffee mug containing freshly brewed coffee"
 coffeepot = Obj "coffee" "a pot of coffee" "A pot containing freshly brewed coffee"
 keter     = Obj "orb" "a peculiar fleshy crimson orb" "A dark crimson orb that seems to be made of organic matter. \nIt seems to perfectly fit into something...?"
 dagger    = Obj "dagger" "an ashen ritual dagger" "A patterned obsidian ritual dagger, embossed with the crimson orb. \nHolding it makes you feel faint."
+pill      = Obj "pill" "a paracetamol pill" "A singular 500mg pill of paracetamol."
 
-bedroom, kitchen, hall, street, altar, shrine :: Room
+bedroom, kitchen, hall, street, altar, shrine, fun :: Room
 
 bedroom = Room "You are in your bedroom."
-               [Exit "north" "To the north is a kitchen. " "kitchen"]
+               [Exit "north" "To the north is a kitchen. " "kitchen",
+                Exit "south" "To the south is the fun room. " "fun"]
                [mug]
+
+fun = Room "You are in the fun room. \nThere is a single wooden chair facing a blank white wall. \nYou reminisce about countless riveting hours spent here."
+           [Exit "north" "To the north is your bedroom. " "bedroom"]
+           [pill]
 
 kitchen = Room "You are in the kitchen."
                [Exit "south" "To the south is your bedroom. " "bedroom",
@@ -66,7 +72,7 @@ kitchen = Room "You are in the kitchen."
                 Exit "east" "To the east is the altar room." "altar"]
                [coffeepot]
 
-altar = Room "You are in the altar room. You forget why or when you added this to the house. \nThe door has disappeared behind you."
+altar = Room "You are in the altar room. You forget why or when you added this to the house. \nThere is a human shaped cutout in the cobbled floor, for some reason - exactly your size. \nThe door has disappeared behind you."
              [Exit "east" "To the east is an ominous arched tunnel snaking downwards. " "shrine"]
              [keter]
 
@@ -93,7 +99,8 @@ gameworld = [("bedroom", bedroom),
              ("hall", hall),
              ("street", street),
              ("altar", altar),
-             ("shrine", shrine)]
+             ("shrine", shrine),
+             ("fun", fun)]
 
 initState :: GameData
 initState = GameData "bedroom" gameworld [] False False False

@@ -203,6 +203,13 @@ place obj state = case carrying state "orb" && (World.getRoomData state) == shri
          where newState = updateRoom state "shrine" (wokenShrine)
       False -> (state, "You don't have the orb on you.")
 
+{- Makes the player lay down in the altar. -}
+
+lay :: Action
+lay obj state = case carrying state "dagger" && (World.getRoomData state) == altar of
+      True -> ( state { finished = true }, "PLACEHOLDER FINISH TEXT")
+      False -> ( state, "You lay down for a while. It's weirdly comfortable but you find that nothing happens. Maybe you need a tool?")
+
 {- Don't update the game state, just list what the player is carrying -}
 
 inv :: Command

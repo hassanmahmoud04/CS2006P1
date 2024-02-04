@@ -23,6 +23,7 @@ data GameData = GameData { location_id :: String, -- where player is
                            inventory :: [Object], -- objects player has
                            poured :: Bool, -- coffee is poured
                            caffeinated :: Bool, -- coffee is drunk
+                           medicated :: Bool, -- pill taken
                            finished :: Bool -- set to True at the end
                          }
 
@@ -52,10 +53,10 @@ mug       = Obj "mug" "a coffee mug" "A coffee mug"
 fullmug   = Obj "mug" "a full coffee mug" "A coffee mug containing freshly brewed coffee"
 coffeepot = Obj "coffee" "a pot of coffee" "A pot containing freshly brewed coffee"
 keter     = Obj "orb" "a peculiar fleshy crimson orb" "A dark crimson orb that seems to be made of organic matter. \nIt seems to perfectly fit into something...?"
-dagger    = Obj "dagger" "an ashen ritual dagger" "A patterned obsidian ritual dagger, embossed with the crimson orb. \nHolding it makes you feel faint."
+dagger    = Obj "dagger" "an ashen ritual dagger" "A patterned obsidian ritual dagger, embossed with a shard of stained sapphire. \nHolding it makes you feel faint."
 pill      = Obj "pill" "a paracetamol pill" "A singular 500mg pill of paracetamol."
 
-bedroom, kitchen, hall, street, altar, shrine, fun :: Room
+bedroom, kitchen, hall, street, altar, shrine, fun, wokenShrine :: Room
 
 bedroom = Room "You are in your bedroom."
                [Exit "north" "To the north is a kitchen. " "kitchen",
@@ -76,11 +77,15 @@ altar = Room "You are in the altar room. You forget why or when you added this t
              [Exit "east" "To the east is an ominous arched tunnel snaking downwards. " "shrine"]
              [keter]
 
-shrine = Room "At the end of the tunnel you reach a shrine to... you can't imagine what. \nA blackened marble sculpture depicts a frightening amalgam of hideous warped flesh. \nOne of its many 'arms' is outstretched, reaching for something..."
+shrine = Room "At the end of the tunnel you reach a shrine to... you can't imagine what. \nA blackened marble sculpture depicts a frightening amalgam of hideous warped flesh. \nOne of its many 'arms' is outstretched, reaching for something... \n('place orb')\n"
               [Exit "west" "To the west is the tunnel you entered from. " "altar"]
               []
 
-hall = Room "You are in the hallway. The front door is closed. "
+wokenShrine = Room "A blackened marble sculpture depicts a frightening amalgam of hideous warped flesh. \nIt's leering visage now reveals an impish sneer. With its hands closed around the orb - you hope it is sated."
+                   [Exit "west" "To the west is the tunnel you entered from. " "altar"]
+                   [dagger]
+
+hall = Room "You are in the hallway. The front door is closed. ('open door') "
             [Exit "east" "To the east is a kitchen. " "kitchen"]
             []
 
@@ -100,10 +105,11 @@ gameworld = [("bedroom", bedroom),
              ("street", street),
              ("altar", altar),
              ("shrine", shrine),
-             ("fun", fun)]
+             ("fun", fun),
+             ("wokenShrine", wokenShrine)]
 
 initState :: GameData
-initState = GameData "bedroom" gameworld [] False False False
+initState = GameData "bedroom" gameworld [] False False False False
 
 {- Return the room the player is currently in. -}
 

@@ -12,6 +12,8 @@ actions "pour"    = Just pour
 actions "examine" = Just examine
 actions "drink"   = Just drink
 actions "open"    = Just open
+actions "place"   = Just place
+actions "swallow" = Just swallow
 actions _         = Nothing
 
 commands :: String -> Maybe Command
@@ -172,6 +174,13 @@ drink obj state =  case carrying state "mug" && carrying state "coffee" && poure
       True -> ( state { inventory = (mug):(inventory (removeInv state "mug")), caffeinated = True}, "You drink the coffee!")
       False -> (state, "You don't have a full mug of coffee. Use command drink.")
 
+{- Removes headache state allows player to go to lectures -}
+
+swallow :: Action
+swallow obj state = case carrying state "pill" && not (medicated state)  of
+      True -> ( state { inventory = (inventory (removeInv state "pill")), medicated = True}, "You take the paracetamol! What sweet relief!")
+      False -> (state, "You don't have a pill. ")
+
 {- Open the door. Only allowed if the player has had coffee! 
    This should change the description of the hall to say that the door is open,
    and add an exit out to the street.
@@ -181,10 +190,18 @@ drink obj state =  case carrying state "mug" && carrying state "coffee" && poure
 -}
 
 open :: Action
-open obj state = case caffeinated state && (World.getRoomData state) == hall of
+open obj state = case caffeinated state && (World.getRoomData state) == hall && medicated state of
       True -> ( newState {location_id = "openHall"}, "You open the door!")
             where newState = updateRoom state "openHall" (Room openedhall openedexits [])
-      False -> (state, "You haven't drank your coffee. Use command open in the hallway.")
+      False -> (state, "You haven't drank your coffee and taken your medicine.")
+
+{- Places the orb in the shrine statue. Updates the room with the dagger. -}
+
+place :: Action
+place obj state = case carrying state "orb" && (World.getRoomData state) == shrine of
+      True -> (newState { inventory = inventory (removeInv state "orb") }, "You place the orb in the statue. It's pyrite fingers enclosing it violently. \nOut of the base of the statue spits a small dagger.")
+         where newState = updateRoom state "shrine" (wokenShrine)
+      False -> (state, "You don't have the orb on you.")
 
 {- Don't update the game state, just list what the player is carrying -}
 

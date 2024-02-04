@@ -49,7 +49,7 @@ type Command = GameData -> (GameData, String)
 
 mug, fullmug, coffeepot, keter, dagger, pill :: Object
 mug       = Obj "mug" "a coffee mug" "A coffee mug"
-fullmug   = Obj "full-mug" "a full coffee mug" "A coffee mug containing freshly brewed coffee"
+fullmug   = Obj "mug" "a full coffee mug" "A coffee mug containing freshly brewed coffee"
 coffeepot = Obj "coffee" "a pot of coffee" "A pot containing freshly brewed coffee"
 keter     = Obj "orb" "a peculiar fleshy crimson orb" "A dark crimson orb that seems to be made of organic matter. \nIt seems to perfectly fit into something...?"
 dagger    = Obj "dagger" "an ashen ritual dagger" "A patterned obsidian ritual dagger, embossed with the crimson orb. \nHolding it makes you feel faint."

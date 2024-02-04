@@ -87,7 +87,7 @@ addInv gd obj = gd { inventory = updatedInv }
 
 removeInv :: GameData -> String -> GameData
 removeInv gd obj = gd { inventory = updatedInv }
-   where updatedInv = filter (\x -> obj_name x == obj) (inventory gd)
+   where updatedInv = [x | x <- inventory gd, obj /= obj_name x]
 
 {- Does the inventory in the game state contain the given object? -}
 
@@ -157,8 +157,7 @@ examine obj state | carrying state obj = (state, obj_desc (head [x | x <- invent
 
 pour :: Action
 pour obj state = case carrying state "mug" && carrying state "coffee" of
-      True -> ( newState { inventory = (fullmug):(inventory state)}, "You pour the coffee into the mug!")
-            where newState = removeInv state "mug"
+      True -> ( state { inventory = (fullmug):(inventory (removeInv state "mug")), poured = True}, "You pour the coffee into the mug!")
       False -> (state, "You don't have both the coffee and the mug. Use command pour.")
 
 {- Drink the coffee. This should only work if the player has a full coffee 
@@ -169,9 +168,8 @@ pour obj state = case carrying state "mug" && carrying state "coffee" of
 -}
 
 drink :: Action
-drink obj state =  case carrying state "full-mug" && carrying state "coffee"  of
-      True -> ( newState { inventory = (mug):(inventory state), caffeinated = True}, "You drink the coffee!")
-            where newState = removeInv state "full-mug"
+drink obj state =  case carrying state "mug" && carrying state "coffee" && poured state  of
+      True -> ( state { inventory = (mug):(inventory (removeInv state "mug")), caffeinated = True}, "You drink the coffee!")
       False -> (state, "You don't have a full mug of coffee. Use command drink.")
 
 {- Open the door. Only allowed if the player has had coffee! 

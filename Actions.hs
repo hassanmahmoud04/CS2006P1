@@ -20,6 +20,7 @@ commands "quit"      = Just quit
 commands "inventory" = Just inv
 commands "lay"       = Just lay
 commands "place"     = Just place
+commands "snap"      = Just snap
 commands _           = Nothing
 
 {- Given a direction and a room to move from, return the room id in
@@ -115,7 +116,7 @@ go dir state = case move dir (World.getRoomData state) of
       Nothing -> (state, "You can't go that way.")
 
 {- Remove an item from the current room, and put it in the player's inventory.
-   This should only work if the object is in the current room. Use 'objectHere'
+   This should only work if the object is in the current room. Use 'objectHere'oom_desc (World.getRoomData state)
    and 'removeObject' to remove the object, and 'updateRoom' to replace the
    room in the game state with the new room which doesn't contain the object.
 
@@ -210,6 +211,13 @@ lay :: Command
 lay state = case carrying state "dagger" && (location_id state) == "altar" of
       True -> ( state {location_id = "street"}, "You lay down into the cutout in the altar. Your hand gripping the dagger fervently. \nYou don't understand why you'd feel compelled to do this, but you need to get to lectures - Ian Gent won't accept disappearance. \nYou squeeze your eyes tightly shut and grimace, grasping your left palm around the blade, wincing at the piercing wave of pain. \n'Your wish is granted.' you hear from a 'voice' ringing in your skull. \nWith a flash, you find yourself outside of your house. Cool.\n")
       False -> ( state, "You lay down for a while. It's weirdly comfortable but you find that nothing happens. Maybe you need a tool of some sort?")
+
+{- Makes the player take a photo -}
+
+snap :: Command
+snap state = case (World.getRoomData state) == bedroom of
+      True -> (state, "Pulling out your phone, you take a picture of yourself in the mirror. \n'Look at you, you greek sculpture' you think, 'DaVinci only dreamed of such a perfect human form.' \n'Let me take a few more, the suitors will love it.' \nUnfortunately, you remember that you are a CompSci student, and these 'suitors' don't exist. \nDamn.")
+      False -> (state, "Your mirror is in the bedroom.")
 
 {- Don't update the game state, just list what the player is carrying -}
 

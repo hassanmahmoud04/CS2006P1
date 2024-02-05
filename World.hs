@@ -58,7 +58,7 @@ pill      = Obj "pill" "a paracetamol pill" "A singular 500mg pill of paracetamo
 
 bedroom, kitchen, hall, street, altar, shrine, fun, wokenShrine :: Room
 
-bedroom = Room "You are in your bedroom."
+bedroom = Room "You are in your bedroom. You consider but decide against getting back in bed. \nYou glance at your mirror. \n('snap')\n"
                [Exit "north" "To the north is a kitchen. " "kitchen",
                 Exit "south" "To the south is the fun room. " "fun"]
                [mug]

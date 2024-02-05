@@ -3,6 +3,13 @@ module Actions where
 import World
 import Data.List (find)
 
+{-
+data GameObj = Mug | CoffeePot | Orb | Dagger | Pill | Door deriving (Eq)
+
+data Direction = North | South | East | West deriving (Eq, Show)
+
+data Imperative = Go Direction | Get GameObj | Drop GameObj | Pour GameObj | Drink GameObj | Open GameObj | Examine GameObj | Swallow GameObj | Lay | Place | Snap | Inventory | Quit deriving (Show, Eq)
+-}
 
 actions :: String -> Maybe Action
 actions "go"      = Just go
@@ -22,6 +29,26 @@ commands "lay"       = Just lay
 commands "place"     = Just place
 commands "snap"      = Just snap
 commands _           = Nothing
+
+{-
+parseDirection :: String -> Maybe Direction
+parseDirection dir = case str of
+      "north" -> Just North
+      "south" -> Just South
+      "east"  -> Just East
+      "west"  -> Just West
+      _       -> Nothing
+
+parseGameObj :: String -> Maybe GameObj
+parseGameObj obj = case obj of
+      "mug"    -> Just Mug
+      "coffee" -> Just CoffeePot
+      "orb"    -> Just Orb
+      "dagger" -> Just Dagger
+      "pill"   -> Just Pill
+      "door"   -> Just Door
+      _        -> Nothing
+-}
 
 {- Given a direction and a room to move from, return the room id in
    that direction, if it exists.

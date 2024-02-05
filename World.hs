@@ -48,11 +48,11 @@ type Action  = String -> GameData -> (GameData, String)
 -- Things which just update the game state
 type Command = GameData -> (GameData, String)
 
-mug, fullmug, coffeepot, keter, dagger, pill :: Object
+mug, fullmug, coffeepot, orb, dagger, pill :: Object
 mug       = Obj "mug" "a coffee mug" "A coffee mug"
 fullmug   = Obj "mug" "a full coffee mug" "A coffee mug containing freshly brewed coffee"
 coffeepot = Obj "coffee" "a pot of coffee" "A pot containing freshly brewed coffee"
-keter     = Obj "orb" "a peculiar fleshy crimson orb" "A dark crimson orb that seems to be made of organic matter. \nIt seems to perfectly fit into something...?"
+orb       = Obj "orb" "a peculiar fleshy crimson orb" "A dark crimson orb that seems to be made of organic matter. \nIt seems to perfectly fit into something...?"
 dagger    = Obj "dagger" "an ashen ritual dagger" "A patterned obsidian ritual dagger, embossed with a shard of stained sapphire. \nHolding it makes you feel faint."
 pill      = Obj "pill" "a paracetamol pill" "A singular 500mg pill of paracetamol."
 
@@ -75,7 +75,7 @@ kitchen = Room "You are in the kitchen."
 
 altar = Room "You are in the altar room. You forget why or when you added this to the house. \nThere is a human shaped cutout in the cobbled pedestal of the altar, for some reason - exactly your size. \n('lay') \n\nThe door has disappeared behind you."
              [Exit "east" "To the east is an ominous arched tunnel snaking downwards. " "shrine"]
-             [keter]
+             [orb]
 
 shrine = Room "At the end of the tunnel you reach a shrine to... you can't imagine what. \nA blackened marble sculpture depicts a frightening amalgam of hideous warped flesh. \nOne of its many 'arms' is outstretched, reaching for something... \n('place')\n"
               [Exit "west" "To the west is the tunnel you entered from. " "altar"]

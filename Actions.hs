@@ -80,8 +80,7 @@ removeObject o rm = rm { objects = newObjs }
    with that object added -}
 
 addObject :: Object -> Room -> Room
-addObject o rm = rm { objects = newObjs }
-   where newObjs = o:(objects rm)
+addObject o rm = rm { objects = o:(objects rm) }
 
 {- Given an object id and a list of objects, return the object data. Note
    that you can assume the object is in the list (i.e. that you have
@@ -99,9 +98,8 @@ objectData o rm = findObj o (objects rm)
    new data. If the room id does not already exist, add it. -}
 
 updateRoom :: GameData -> String -> Room -> GameData
-updateRoom gd rmid rmdata = gd { location_id = newLocation, world = newWorld }
-   where newLocation = rmid
-         newWorld | elem (rmid, rmdata) (world gd) = (world gd)
+updateRoom gd rmid rmdata = gd { location_id = rmid, world = newWorld }
+   where newWorld | elem (rmid, rmdata) (world gd) = (world gd)
                   | otherwise = (rmid, rmdata):(world gd)
 
 {- Given a game state and an object id, find the object in the current
@@ -162,14 +160,14 @@ get obj state = case objectHere obj (World.getRoomData state) of
 
 {- Remove an item from the player's inventory, and put it in the current room.
    Similar to 'get' but in reverse - find the object in the inventory, create
-   a new room with the object in, update the game world with the new room.
+   a new room with the object in, update the game world with the new room.[x | x <- inventory state, obj == obj_name x]
 -}
 
 put :: Action
 put obj state = case carrying state obj of
-      True -> (removeInv newState obj, "You put the " ++ obj ++ " down.")
+      True -> (newState {location_id = location_id newState, inventory = inventory (removeInv newState obj)}, "You put the " ++ obj ++ " down.")
          where newState = updateRoom state (location_id state) (addObject newObj (World.getRoomData state))
-               newObj = findObj obj [x | x <- inventory state, obj == obj_name x]
+               newObj = findObj obj $ inventory state
       False -> (state, "You are not holding the " ++ obj ++ ".")
       
 {- Don't update the state, just return a message giving the full description

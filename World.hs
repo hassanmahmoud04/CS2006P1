@@ -73,11 +73,11 @@ kitchen = Room "You are in the kitchen."
                 Exit "east" "To the east is the altar room." "altar"]
                [coffeepot]
 
-altar = Room "You are in the altar room. You forget why or when you added this to the house. \nThere is a human shaped cutout in the cobbled floor, for some reason - exactly your size. \n('lay down') \n\nThe door has disappeared behind you."
+altar = Room "You are in the altar room. You forget why or when you added this to the house. \nThere is a human shaped cutout in the cobbled pedestal of the altar, for some reason - exactly your size. \n('lay') \n\nThe door has disappeared behind you."
              [Exit "east" "To the east is an ominous arched tunnel snaking downwards. " "shrine"]
              [keter]
 
-shrine = Room "At the end of the tunnel you reach a shrine to... you can't imagine what. \nA blackened marble sculpture depicts a frightening amalgam of hideous warped flesh. \nOne of its many 'arms' is outstretched, reaching for something... \n('place orb')\n"
+shrine = Room "At the end of the tunnel you reach a shrine to... you can't imagine what. \nA blackened marble sculpture depicts a frightening amalgam of hideous warped flesh. \nOne of its many 'arms' is outstretched, reaching for something... \n('place')\n"
               [Exit "west" "To the west is the tunnel you entered from. " "altar"]
               []
 

@@ -12,13 +12,14 @@ actions "pour"    = Just pour
 actions "examine" = Just examine
 actions "drink"   = Just drink
 actions "open"    = Just open
-actions "place"   = Just place
 actions "swallow" = Just swallow
 actions _         = Nothing
 
 commands :: String -> Maybe Command
 commands "quit"      = Just quit
 commands "inventory" = Just inv
+commands "lay"       = Just lay
+commands "place"     = Just place
 commands _           = Nothing
 
 {- Given a direction and a room to move from, return the room id in
@@ -170,14 +171,14 @@ pour obj state = case carrying state "mug" && carrying state "coffee" of
 -}
 
 drink :: Action
-drink obj state =  case carrying state "mug" && carrying state "coffee" && poured state  of
+drink obj state =  case carrying state "mug" && carrying state "coffee" && poured state of
       True -> ( state { inventory = (mug):(inventory (removeInv state "mug")), caffeinated = True}, "You drink the coffee!")
       False -> (state, "You don't have a full mug of coffee. Use command drink.")
 
 {- Removes headache state allows player to go to lectures -}
 
 swallow :: Action
-swallow obj state = case carrying state "pill" && not (medicated state)  of
+swallow obj state = case carrying state "pill" && not (medicated state) of
       True -> ( state { inventory = (inventory (removeInv state "pill")), medicated = True}, "You take the paracetamol! What sweet relief!")
       False -> (state, "You don't have a pill. ")
 
@@ -197,18 +198,18 @@ open obj state = case caffeinated state && (World.getRoomData state) == hall && 
 
 {- Places the orb in the shrine statue. Updates the room with the dagger. -}
 
-place :: Action
-place obj state = case carrying state "orb" && (World.getRoomData state) == shrine of
+place :: Command
+place state = case carrying state "orb" && (World.getRoomData state) == shrine of
       True -> (newState { inventory = inventory (removeInv state "orb") }, "You place the orb in the statue. It's pyrite fingers enclosing it violently. \nOut of the base of the statue spits a small dagger.")
          where newState = updateRoom state "shrine" (wokenShrine)
-      False -> (state, "You don't have the orb on you.")
+      False -> (state, "Place the orb in the shrine room.")
 
 {- Makes the player lay down in the altar. -}
 
-lay :: Action
-lay obj state = case carrying state "dagger" && (World.getRoomData state) == altar of
-      True -> ( state { finished = true }, "PLACEHOLDER FINISH TEXT")
-      False -> ( state, "You lay down for a while. It's weirdly comfortable but you find that nothing happens. Maybe you need a tool?")
+lay :: Command
+lay state = case carrying state "dagger" && (location_id state) == "altar" of
+      True -> ( state {location_id = "street"}, "You lay down into the cutout in the altar. Your hand gripping the dagger fervently. \nYou don't understand why you'd feel compelled to do this, but you need to get to lectures - Ian Gent won't accept disappearance. \nYou squeeze your eyes tightly shut and grimace, grasping your left palm around the blade, wincing at the piercing wave of pain. \n'Your wish is granted.' you hear from a 'voice' ringing in your skull. \nWith a flash, you find yourself outside of your house. Cool.\n")
+      False -> ( state, "You lay down for a while. It's weirdly comfortable but you find that nothing happens. Maybe you need a tool of some sort?")
 
 {- Don't update the game state, just list what the player is carrying -}
 

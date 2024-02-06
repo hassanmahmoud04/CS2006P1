@@ -1,11 +1,13 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Actions where
 
 import World
 import Data.List (find)
+import Data.Aeson (FromJSON, ToJSON, encode, decode)
 import qualified Data.ByteString.Lazy as BL
-import qualified Data.Aeson.Encoding as Ae
-import qualified Data.Aeson.Decoding as Ad
 import System.IO
+
 
 {-
 data GameObj = Mug | CoffeePot | Orb | Dagger | Pill | Door deriving (Eq)
@@ -56,17 +58,18 @@ parseGameObj obj = case obj of
 
 {-
 {-Save Function - Writes GameData to a file-}
-saveFile :: GameData -> String -> IO ()
-saveFile state file = do
-                      BL.writeFile ("./Saves/" ++ file ++ ".save") $ Ae.encodingToLazyByteString state
+save :: GameData -> String -> IO ()
+save state file = do
+                      BL.writeFile ("./Saves/" ++ file ++ ".save") $ (encode state)
+                      putStr ("Saved progress to " ++ file ++ ".save")
 
 {-Load Function - Reads GameData from a file-}
-loadFile :: String -> IO GameData
-loadFile file = do 
-   case Ad.decode (BL.readFile ("./Saves/" ++ file ++ ".save")) of
-      Just x -> x
-      Nothing -> initState
-
+load :: String -> IO GameData
+load file = do 
+                content <- BL.readFile ("./Saves/" ++ file ++ ".save")
+                case decode content of
+                   Just x -> return x
+                   Nothing -> return initState       
 -}
 
 {- Given a direction and a room to move from, return the room id in
@@ -138,7 +141,7 @@ removeInv gd obj = gd { inventory = updatedInv }
    where updatedInv = [x | x <- inventory gd, obj /= obj_name x]
 
 {- Does the inventory in the game state contain the given object? -}
-Action
+
 carrying :: GameData -> String -> Bool
 carrying gd obj = elem obj [obj_name x | x <- inventory gd, obj == obj_name x]
 

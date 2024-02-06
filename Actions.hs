@@ -2,7 +2,14 @@ module Actions where
 
 import World
 import Data.List (find)
+import Test.QuickCheck
+{-
+data GameObj = Mug | CoffeePot | Orb | Dagger | Pill | Door deriving (Eq)
 
+data Direction = North | South | East | West deriving (Eq, Show)
+
+data Imperative = Go Direction | Get GameObj | Drop GameObj | Pour GameObj | Drink GameObj | Open GameObj | Examine GameObj | Swallow GameObj | Lay | Place | Snap | Inventory | Quit deriving (Show, Eq)
+-}
 
 actions :: String -> Maybe Action
 actions "go"      = Just go
@@ -20,7 +27,28 @@ commands "quit"      = Just quit
 commands "inventory" = Just inv
 commands "lay"       = Just lay
 commands "place"     = Just place
+commands "snap"      = Just snap
 commands _           = Nothing
+
+{-
+parseDirection :: String -> Maybe Direction
+parseDirection dir = case str of
+      "north" -> Just North
+      "south" -> Just South
+      "east"  -> Just East
+      "west"  -> Just West
+      _       -> Nothing
+
+parseGameObj :: String -> Maybe GameObj
+parseGameObj obj = case obj of
+      "mug"    -> Just Mug
+      "coffee" -> Just CoffeePot
+      "orb"    -> Just Orb
+      "dagger" -> Just Dagger
+      "pill"   -> Just Pill
+      "door"   -> Just Door
+      _        -> Nothing
+-}
 
 {- Given a direction and a room to move from, return the room id in
    that direction, if it exists.
@@ -52,8 +80,7 @@ removeObject o rm = rm { objects = newObjs }
    with that object added -}
 
 addObject :: Object -> Room -> Room
-addObject o rm = rm { objects = newObjs }
-   where newObjs = o:(objects rm)
+addObject o rm = rm { objects = o:(objects rm) }
 
 {- Given an object id and a list of objects, return the object data. Note
    that you can assume the object is in the list (i.e. that you have
@@ -71,9 +98,8 @@ objectData o rm = findObj o (objects rm)
    new data. If the room id does not already exist, add it. -}
 
 updateRoom :: GameData -> String -> Room -> GameData
-updateRoom gd rmid rmdata = gd { location_id = newLocation, world = newWorld }
-   where newLocation = rmid
-         newWorld | elem (rmid, rmdata) (world gd) = (world gd)
+updateRoom gd rmid rmdata = gd { location_id = rmid, world = newWorld }
+   where newWorld | elem (rmid, rmdata) (world gd) = (world gd)
                   | otherwise = (rmid, rmdata):(world gd)
 
 {- Given a game state and an object id, find the object in the current
@@ -115,7 +141,7 @@ go dir state = case move dir (World.getRoomData state) of
       Nothing -> (state, "You can't go that way.")
 
 {- Remove an item from the current room, and put it in the player's inventory.
-   This should only work if the object is in the current room. Use 'objectHere'
+   This should only work if the object is in the current room. Use 'objectHere'oom_desc (World.getRoomData state)
    and 'removeObject' to remove the object, and 'updateRoom' to replace the
    room in the game state with the new room which doesn't contain the object.
 
@@ -134,14 +160,14 @@ get obj state = case objectHere obj (World.getRoomData state) of
 
 {- Remove an item from the player's inventory, and put it in the current room.
    Similar to 'get' but in reverse - find the object in the inventory, create
-   a new room with the object in, update the game world with the new room.
+   a new room with the object in, update the game world with the new room.[x | x <- inventory state, obj == obj_name x]
 -}
 
 put :: Action
 put obj state = case carrying state obj of
-      True -> (removeInv newState obj, "You put the " ++ obj ++ " down.")
+      True -> (newState {location_id = location_id newState, inventory = inventory (removeInv newState obj)}, "You put the " ++ obj ++ " down.")
          where newState = updateRoom state (location_id state) (addObject newObj (World.getRoomData state))
-               newObj = findObj obj [x | x <- inventory state, obj == obj_name x]
+               newObj = findObj obj $ inventory state
       False -> (state, "You are not holding the " ++ obj ++ ".")
       
 {- Don't update the state, just return a message giving the full description
@@ -211,6 +237,13 @@ lay state = case carrying state "dagger" && (location_id state) == "altar" of
       True -> ( state {location_id = "street"}, "You lay down into the cutout in the altar. Your hand gripping the dagger fervently. \nYou don't understand why you'd feel compelled to do this, but you need to get to lectures - Ian Gent won't accept disappearance. \nYou squeeze your eyes tightly shut and grimace, grasping your left palm around the blade, wincing at the piercing wave of pain. \n'Your wish is granted.' you hear from a 'voice' ringing in your skull. \nWith a flash, you find yourself outside of your house. Cool.\n")
       False -> ( state, "You lay down for a while. It's weirdly comfortable but you find that nothing happens. Maybe you need a tool of some sort?")
 
+{- Makes the player take a photo -}
+
+snap :: Command
+snap state = case (World.getRoomData state) == bedroom of
+      True -> (state, "Pulling out your phone, you take a picture of yourself in the mirror. \n'Look at you, you greek sculpture' you think, 'DaVinci only dreamed of such a perfect human form.' \n'Let me take a few more, the suitors will love it.' \nUnfortunately, you remember that you are a CompSci student, and these 'suitors' don't exist. \nDamn.")
+      False -> (state, "Your mirror is in the bedroom.")
+
 {- Don't update the game state, just list what the player is carrying -}
 
 inv :: Command
@@ -225,10 +258,41 @@ quit state = (state { finished = True }, "Bye bye")
 
 
 prop_gokitchen :: Bool
-prop_go = go "north" (initState) ==  ((initState {location_id = "kitchen"}), "You go north")
+prop_gokitchen = (go "north" (initState)) ==  ((initState {location_id = "kitchen"}), "You go north")
 
 prop_gonowhere :: String -> Bool
 prop_gonowhere dir = go dir (initState) ==  (initState, "You can't go that way.")
 
 prop_getmug :: Bool
-prop_getmug = get "mug" (initState) ==  newState { inventory = (objectData obj (getRoomData initState)):(inventory state)}, "You get the " ++ obj
+prop_getmug = (get "mug" (initState)) ==  (newState { inventory = (objectData "mug" (getRoomData initState)):(inventory initState)}, "You get the mug") 
+                                     where newState = updateRoom initState (location_id initState) (removeObject "mug" (getRoomData initState))
+                             
+prop_getnothing :: String -> Bool
+prop_getnothing obj = get obj (initState) ==  (initState, "There is no " ++ obj ++ " in this room.")
+
+--examine the mug in the room
+prop_examineroom :: Bool
+prop_examineroom = examine "mug" (initState) ==  (initState, obj_desc mug)
+
+--examine the mug in the inventory
+prop_examineinv :: Bool
+prop_examineinv = (examine "mug" (addInv initState "mug")) == ((addInv initState "mug"), obj_desc mug)
+
+prop_examineNothing :: String -> Bool
+prop_examineNothing obj = examine obj (initState) ==  (initState, "That object is not in the room or your inventory.")
+
+prop_pour :: Bool
+prop_pour = pour "coffee" initState {inventory = [mug, coffeepot]} == (state { inventory = (fullmug):(inventory (removeInv state "mug")), poured = True}, "You pour the coffee into the mug!")
+                                                                 where state = initState {inventory = [mug, coffeepot]}
+--pour with coffee pot but no mug
+prop_pourNoMug :: Bool
+prop_pourNoMug = pour "coffee" initState {inventory = [coffeepot]} == (state, "You don't have both the coffee and the mug. Use command pour.")
+                                                                 where state = initState {inventory = [coffeepot]}
+--pour with mug but no coffee pot
+prop_pourNoCoffee :: Bool
+prop_pourNoCoffee = pour "coffee" initState {inventory = [mug]} == (state, "You don't have both the coffee and the mug. Use command pour.")
+                                                                 where state = initState {inventory = [mug]}
+--pour an arbitrary string
+prop_pourString :: String -> Bool
+prop_pourString str = pour str initState {inventory = [mug, coffeepot]} == (state, "You don't have both the coffee and the mug. Use command pour.")
+                                                                 where state = initState {inventory = [mug, coffeepot]}

@@ -223,3 +223,12 @@ inv state = (state, showInv (inventory state))
 quit :: Command
 quit state = (state { finished = True }, "Bye bye")
 
+
+prop_gokitchen :: Bool
+prop_go = go "north" (initState) ==  ((initState {location_id = "kitchen"}), "You go north")
+
+prop_gonowhere :: String -> Bool
+prop_gonowhere dir = go dir (initState) ==  (initState, "You can't go that way.")
+
+prop_getmug :: Bool
+prop_getmug = get "mug" (initState) ==  newState { inventory = (objectData obj (getRoomData initState)):(inventory state)}, "You get the " ++ obj

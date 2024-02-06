@@ -14,5 +14,5 @@ executable adventure
   main-is:             Adventure.hs
   hs-source-dirs:      .
   other-modules:       Actions, World, Parsing
-  build-depends:       base >=4.12 && <5, haskeline, mtl
+  build-depends:       base >=4.12 && <5, haskeline, mtl, aeson, bytestring
   default-language:    Haskell2010

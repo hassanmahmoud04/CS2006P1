@@ -2,6 +2,10 @@ module Actions where
 
 import World
 import Data.List (find)
+import qualified Data.ByteString.Lazy as BL
+import qualified Data.Aeson.Encoding as Ae
+import qualified Data.Aeson.Decoding as Ad
+import System.IO
 
 {-
 data GameObj = Mug | CoffeePot | Orb | Dagger | Pill | Door deriving (Eq)
@@ -15,11 +19,7 @@ actions :: String -> Maybe Action
 actions "go"      = Just go
 actions "get"     = Just get
 actions "drop"    = Just put
-actions "pour"    = Just pour
 actions "examine" = Just examine
-actions "drink"   = Just drink
-actions "open"    = Just open
-actions "swallow" = Just swallow
 actions _         = Nothing
 
 commands :: String -> Maybe Command
@@ -28,6 +28,10 @@ commands "inventory" = Just inv
 commands "lay"       = Just lay
 commands "place"     = Just place
 commands "snap"      = Just snap
+commands "pour"      = Just pour
+commands "drink"     = Just drink
+commands "swallow"   = Just swallow
+commands "open"      = Just open
 commands _           = Nothing
 
 {-
@@ -48,6 +52,21 @@ parseGameObj obj = case obj of
       "pill"   -> Just Pill
       "door"   -> Just Door
       _        -> Nothing
+-}
+
+{-
+{-Save Function - Writes GameData to a file-}
+saveFile :: GameData -> String -> IO ()
+saveFile state file = do
+                      BL.writeFile ("./Saves/" ++ file ++ ".save") $ Ae.encodingToLazyByteString state
+
+{-Load Function - Reads GameData from a file-}
+loadFile :: String -> IO GameData
+loadFile file = do 
+   case Ad.decode (BL.readFile ("./Saves/" ++ file ++ ".save")) of
+      Just x -> x
+      Nothing -> initState
+
 -}
 
 {- Given a direction and a room to move from, return the room id in
@@ -119,7 +138,7 @@ removeInv gd obj = gd { inventory = updatedInv }
    where updatedInv = [x | x <- inventory gd, obj /= obj_name x]
 
 {- Does the inventory in the game state contain the given object? -}
-
+Action
 carrying :: GameData -> String -> Bool
 carrying gd obj = elem obj [obj_name x | x <- inventory gd, obj == obj_name x]
 
@@ -184,8 +203,8 @@ examine obj state | carrying state obj = (state, obj_desc (head [x | x <- invent
    object in the player's inventory to be a new object, a "full mug".
 -}
 
-pour :: Action
-pour obj state = case carrying state "mug" && carrying state "coffee" of
+pour :: Command
+pour state = case carrying state "mug" && carrying state "coffee" of
       True -> ( state { inventory = (fullmug):(inventory (removeInv state "mug")), poured = True}, "You pour the coffee into the mug!")
       False -> (state, "You don't have both the coffee and the mug. Use command pour.")
 
@@ -196,15 +215,15 @@ pour obj state = case carrying state "mug" && carrying state "coffee" of
    Also, put the empty coffee mug back in the inventory!
 -}
 
-drink :: Action
-drink obj state =  case carrying state "mug" && carrying state "coffee" && poured state of
+drink :: Command
+drink state =  case carrying state "mug" && carrying state "coffee" && poured state of
       True -> ( state { inventory = (mug):(inventory (removeInv state "mug")), caffeinated = True}, "You drink the coffee!")
       False -> (state, "You don't have a full mug of coffee. Use command drink.")
 
 {- Removes headache state allows player to go to lectures -}
 
-swallow :: Action
-swallow obj state = case carrying state "pill" && not (medicated state) of
+swallow :: Command
+swallow state = case carrying state "pill" && not (medicated state) of
       True -> ( state { inventory = (inventory (removeInv state "pill")), medicated = True}, "You take the paracetamol! What sweet relief!")
       False -> (state, "You don't have a pill. ")
 
@@ -216,8 +235,8 @@ swallow obj state = case carrying state "pill" && not (medicated state) of
    'openedhall' and 'openedexits' from World.hs for this.
 -}
 
-open :: Action
-open obj state = case caffeinated state && (World.getRoomData state) == hall && medicated state of
+open :: Command
+open state = case caffeinated state && (World.getRoomData state) == hall && medicated state of
       True -> ( newState {location_id = "openHall"}, "You open the door!")
             where newState = updateRoom state "openHall" (Room openedhall openedexits [])
       False -> (state, "You haven't drank your coffee and taken your medicine.")

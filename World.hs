@@ -100,7 +100,7 @@ wokenShrine = Room "A blackened marble sculpture depicts a frightening amalgam o
                    [Exit "west" "To the west is the tunnel you entered from. " "altar"]
                    [dagger]
 
-hall = Room "You are in the hallway. The front door is closed. ('open door') "
+hall = Room "You are in the hallway. The front door is closed. ('open') "
             [Exit "east" "To the east is a kitchen. " "kitchen"]
             []
 

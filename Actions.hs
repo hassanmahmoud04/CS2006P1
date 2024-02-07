@@ -262,7 +262,7 @@ lay state = case carrying state "dagger" && (location_id state) == "altar" of
 {- Makes the player take a photo -}
 
 snap :: Command
-snap state = case (World.getRoomData state) == bedroom of
+snap state = case (location_id state) == "bedroom" of
       True -> (state, "Pulling out your phone, you take a picture of yourself in the mirror. \n'Look at you, you greek sculpture' you think, 'DaVinci only dreamed of such a perfect human form.' \n'Let me take a few more, the suitors will love it.' \nUnfortunately, you remember that you are a CompSci student, and these 'suitors' don't exist. \nDamn.")
       False -> (state, "Your mirror is in the bedroom.")
 

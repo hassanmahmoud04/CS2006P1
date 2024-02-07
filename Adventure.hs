@@ -4,8 +4,8 @@ import World    -- Contains the game world's data structures and logic.
 import Actions  -- Includes definitions for game actions and helper functions.
 import Control.Monad.Trans (liftIO)
 import System.Console.Haskeline
-import Test.QuickCheck
-import Test.QuickCheck.All
+--import Test.QuickCheck
+--import Test.QuickCheck.All
 
 clear = "\ESC[2J"
 

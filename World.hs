@@ -3,14 +3,14 @@
 module World where
 
 import GHC.Generics 
---import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON, ToJSON)
 
 data Object = Obj { obj_name :: String,
                     obj_longname :: String,
                     obj_desc :: String }
    deriving (Eq, Generic)
--- instance ToJSON Object
--- instance FromJSON Object
+instance ToJSON Object
+instance FromJSON Object
 
 instance Show Object where
    show obj = obj_longname obj
@@ -19,15 +19,15 @@ data Exit = Exit { exit_dir :: String,
                    exit_desc :: String,
                    room :: String }
    deriving (Eq, Generic)
--- instance ToJSON Exit
--- instance FromJSON Exit
+instance ToJSON Exit
+instance FromJSON Exit
 
 data Room = Room { room_desc :: String,
                    exits :: [Exit],
                    objects :: [Object] }
    deriving (Eq, Generic)
--- instance ToJSON Room 
--- instance FromJSON Room
+instance ToJSON Room 
+instance FromJSON Room
 
 data GameData = GameData { location_id :: String, -- where player is
                            world :: [(String, Room)],
@@ -38,8 +38,8 @@ data GameData = GameData { location_id :: String, -- where player is
                            finished :: Bool -- set to True at the end
                          }
    deriving Generic
--- instance ToJSON GameData 
--- instance FromJSON GameData
+instance ToJSON GameData 
+instance FromJSON GameData
 
 
 won :: GameData -> Bool

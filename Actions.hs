@@ -141,7 +141,6 @@ removeInv gd obj = gd { inventory = updatedInv }
    where updatedInv = [x | x <- inventory gd, obj /= obj_name x]
 
 {- Does the inventory in the game state contain the given object? -}
-Action
 carrying :: GameData -> String -> Bool
 carrying gd obj = elem obj [obj_name x | x <- inventory gd, obj == obj_name x]
 

@@ -37,7 +37,7 @@ data GameData = GameData { location_id :: String, -- where player is
                            medicated :: Bool, -- pill taken
                            finished :: Bool -- set to True at the end
                          }
-   deriving Generic
+   deriving (Eq, Generic)
 instance ToJSON GameData 
 instance FromJSON GameData
 

@@ -2,7 +2,11 @@ module Actions where
 
 import World
 import Data.List (find)
-import Test.QuickCheck
+import qualified Data.ByteString.Lazy as BL
+import qualified Data.Aeson.Encoding as Ae
+import qualified Data.Aeson.Decoding as Ad
+import System.IO
+
 {-
 data GameObj = Mug | CoffeePot | Orb | Dagger | Pill | Door deriving (Eq)
 
@@ -15,11 +19,7 @@ actions :: String -> Maybe Action
 actions "go"      = Just go
 actions "get"     = Just get
 actions "drop"    = Just put
-actions "pour"    = Just pour
 actions "examine" = Just examine
-actions "drink"   = Just drink
-actions "open"    = Just open
-actions "swallow" = Just swallow
 actions _         = Nothing
 
 commands :: String -> Maybe Command
@@ -28,6 +28,10 @@ commands "inventory" = Just inv
 commands "lay"       = Just lay
 commands "place"     = Just place
 commands "snap"      = Just snap
+commands "pour"      = Just pour
+commands "drink"     = Just drink
+commands "swallow"   = Just swallow
+commands "open"      = Just open
 commands _           = Nothing
 
 {-
@@ -48,6 +52,21 @@ parseGameObj obj = case obj of
       "pill"   -> Just Pill
       "door"   -> Just Door
       _        -> Nothing
+-}
+
+{-
+{-Save Function - Writes GameData to a file-}
+saveFile :: GameData -> String -> IO ()
+saveFile state file = do
+                      BL.writeFile ("./Saves/" ++ file ++ ".save") $ Ae.encodingToLazyByteString state
+
+{-Load Function - Reads GameData from a file-}
+loadFile :: String -> IO GameData
+loadFile file = do 
+   case Ad.decode (BL.readFile ("./Saves/" ++ file ++ ".save")) of
+      Just x -> x
+      Nothing -> initState
+
 -}
 
 {- Given a direction and a room to move from, return the room id in
@@ -119,7 +138,6 @@ removeInv gd obj = gd { inventory = updatedInv }
    where updatedInv = [x | x <- inventory gd, obj /= obj_name x]
 
 {- Does the inventory in the game state contain the given object? -}
-
 carrying :: GameData -> String -> Bool
 carrying gd obj = elem obj [obj_name x | x <- inventory gd, obj == obj_name x]
 
@@ -184,8 +202,8 @@ examine obj state | carrying state obj = (state, obj_desc (head [x | x <- invent
    object in the player's inventory to be a new object, a "full mug".
 -}
 
-pour :: Action
-pour obj state = case carrying state "mug" && carrying state "coffee" of
+pour :: Command
+pour state = case carrying state "mug" && carrying state "coffee" of
       True -> ( state { inventory = (fullmug):(inventory (removeInv state "mug")), poured = True}, "You pour the coffee into the mug!")
       False -> (state, "You don't have both the coffee and the mug. Use command pour.")
 
@@ -196,15 +214,15 @@ pour obj state = case carrying state "mug" && carrying state "coffee" of
    Also, put the empty coffee mug back in the inventory!
 -}
 
-drink :: Action
-drink obj state =  case carrying state "mug" && carrying state "coffee" && poured state of
+drink :: Command
+drink state =  case carrying state "mug" && poured state of
       True -> ( state { inventory = (mug):(inventory (removeInv state "mug")), caffeinated = True}, "You drink the coffee!")
       False -> (state, "You don't have a full mug of coffee. Use command drink.")
 
 {- Removes headache state allows player to go to lectures -}
 
-swallow :: Action
-swallow obj state = case carrying state "pill" && not (medicated state) of
+swallow :: Command
+swallow state = case carrying state "pill" && not (medicated state) of
       True -> ( state { inventory = (inventory (removeInv state "pill")), medicated = True}, "You take the paracetamol! What sweet relief!")
       False -> (state, "You don't have a pill. ")
 
@@ -216,8 +234,8 @@ swallow obj state = case carrying state "pill" && not (medicated state) of
    'openedhall' and 'openedexits' from World.hs for this.
 -}
 
-open :: Action
-open obj state = case caffeinated state && (World.getRoomData state) == hall && medicated state of
+open :: Command
+open state = case caffeinated state && (World.getRoomData state) == hall && medicated state of
       True -> ( newState {location_id = "openHall"}, "You open the door!")
             where newState = updateRoom state "openHall" (Room openedhall openedexits [])
       False -> (state, "You haven't drank your coffee and taken your medicine.")
@@ -282,17 +300,97 @@ prop_examineNothing :: String -> Bool
 prop_examineNothing obj = examine obj (initState) ==  (initState, "That object is not in the room or your inventory.")
 
 prop_pour :: Bool
-prop_pour = pour "coffee" initState {inventory = [mug, coffeepot]} == (state { inventory = (fullmug):(inventory (removeInv state "mug")), poured = True}, "You pour the coffee into the mug!")
-                                                                 where state = initState {inventory = [mug, coffeepot]}
+prop_pour = pour state == (state { inventory = (fullmug):(inventory (removeInv state "mug")), poured = True}, "You pour the coffee into the mug!")
+                                 where state = initState {inventory = [mug, coffeepot]}
 --pour with coffee pot but no mug
 prop_pourNoMug :: Bool
-prop_pourNoMug = pour "coffee" initState {inventory = [coffeepot]} == (state, "You don't have both the coffee and the mug. Use command pour.")
-                                                                 where state = initState {inventory = [coffeepot]}
+prop_pourNoMug = pour state == (state, "You don't have both the coffee and the mug. Use command pour.")
+                                 where state = initState {inventory = [coffeepot]}
 --pour with mug but no coffee pot
 prop_pourNoCoffee :: Bool
-prop_pourNoCoffee = pour "coffee" initState {inventory = [mug]} == (state, "You don't have both the coffee and the mug. Use command pour.")
-                                                                 where state = initState {inventory = [mug]}
---pour an arbitrary string
-prop_pourString :: String -> Bool
-prop_pourString str = pour str initState {inventory = [mug, coffeepot]} == (state, "You don't have both the coffee and the mug. Use command pour.")
-                                                                 where state = initState {inventory = [mug, coffeepot]}
+prop_pourNoCoffee = pour state == (state, "You don't have both the coffee and the mug. Use command pour.")
+                                 where state = initState {inventory = [mug]}
+--pour with empty inventory
+prop_pourNothing :: Bool
+prop_pourNothing = pour initState == (initState, "You don't have both the coffee and the mug. Use command pour.")
+
+--drink with a full mug
+prop_drink :: Bool
+prop_drink = drink state == (state { inventory = (mug):(inventory (removeInv state "mug")), caffeinated = True}, "You drink the coffee!")
+                                 where state = initState {inventory = [mug], poured = True}
+--drink with an empty mug
+prop_drinkEmpty :: Bool
+prop_drinkEmpty = drink state == (state, "You don't have a full mug of coffee. Use command drink.")
+                                 where state = initState {inventory = [mug]}
+
+--drink with a poured mug but not in inventory
+prop_drinkNoMug :: Bool
+prop_drinkNoMug = drink state == (state, "You don't have a full mug of coffee. Use command drink.")
+                                 where state = initState {poured = True }
+--drink with empty inventory
+prop_drinkNothing :: Bool
+prop_drinkNothing = drink state == (state, "You don't have a full mug of coffee. Use command drink.")
+                                 where state = initState
+--swallow with pill
+prop_swallow :: Bool
+prop_swallow = swallow state == ( state { inventory = (inventory (removeInv state "pill")), medicated = True}, "You take the paracetamol! What sweet relief!")
+                                 where state = initState {inventory = [pill]}
+--swallow with empty inventory
+prop_swallowNothing :: Bool
+prop_swallowNothing = swallow state == (state, "You don't have a pill. ")
+                                 where state = initState
+--open door
+prop_open :: Bool
+prop_open = open state == ( newState {location_id = "openHall"}, "You open the door!")
+                           where newState = updateRoom state "openHall" (Room openedhall openedexits [])
+                                 state = initState {location_id = "hall", caffeinated = True, medicated = True}
+--open door without being caffeinated                                 
+prop_openUncaffinated :: Bool
+prop_openUncaffinated = open state == (state, "You haven't drank your coffee and taken your medicine.")
+                           where state = initState {location_id = "hall", medicated = True}
+--open door without being medicated
+prop_openUnmedicated :: Bool
+prop_openUnmedicated = open state == (state, "You haven't drank your coffee and taken your medicine.")
+                           where state = initState {location_id = "hall", caffeinated = True}
+--open door without being medicated or caffeinated
+prop_openNotReady :: Bool
+prop_openNotReady = open state == (state, "You haven't drank your coffee and taken your medicine.")
+                           where state = initState {location_id = "hall"}
+--open the front door not in the hall
+prop_openWrongLocation :: Bool
+prop_openWrongLocation = open state == (state, "You haven't drank your coffee and taken your medicine.")
+                           where state = initState
+
+prop_lay :: Bool
+prop_lay = lay state == ( state {location_id = "street"}, "You lay down into the cutout in the altar. Your hand gripping the dagger fervently. \nYou don't understand why you'd feel compelled to do this, but you need to get to lectures - Ian Gent won't accept disappearance. \nYou squeeze your eyes tightly shut and grimace, grasping your left palm around the blade, wincing at the piercing wave of pain. \n'Your wish is granted.' you hear from a 'voice' ringing in your skull. \nWith a flash, you find yourself outside of your house. Cool.\n")
+                           where state = initState {location_id = "altar", inventory = [dagger]}
+
+prop_layWrongLocation :: Bool
+prop_layWrongLocation = lay state == ( state, "You lay down for a while. It's weirdly comfortable but you find that nothing happens. Maybe you need a tool of some sort?")
+                           where state = initState {inventory = [dagger]}
+
+prop_layNoDagger :: Bool
+prop_layNoDagger = lay state == ( state, "You lay down for a while. It's weirdly comfortable but you find that nothing happens. Maybe you need a tool of some sort?")
+                           where state = initState {location_id = "altar"}
+
+prop_snap :: Bool
+prop_snap = snap state == (state, "Pulling out your phone, you take a picture of yourself in the mirror. \n'Look at you, you greek sculpture' you think, 'DaVinci only dreamed of such a perfect human form.' \n'Let me take a few more, the suitors will love it.' \nUnfortunately, you remember that you are a CompSci student, and these 'suitors' don't exist. \nDamn.")
+                           where state = initState
+
+prop_snapWrongLocation :: Bool
+prop_snapWrongLocation = snap state == (state, "Your mirror is in the bedroom.")
+                           where state = initState {location_id = "kitchen"}
+
+--inv with empty inventory
+prop_inv :: Bool
+prop_inv = inv initState == (initState, "You aren't carrying anything")
+
+--inv with mug
+prop_invWithMug :: Bool
+prop_invWithMug = inv state == (state, "You are carrying:\na coffee mug")
+               where state = initState {inventory = [mug]}
+
+--inv with mug
+prop_invWithMoreItems :: Bool
+prop_invWithMoreItems = inv state == (state, "You are carrying:\na coffee mug\na pot of coffee\nan ashen ritual dagger")
+               where state = initState {inventory = [mug, coffeepot, dagger]}

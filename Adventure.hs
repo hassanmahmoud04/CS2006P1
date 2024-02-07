@@ -10,7 +10,7 @@ import Test.QuickCheck.All
 clear = "\ESC[2J"
 
 winmessage = "Congratulations, you have made it out of the house.\nNow go to your lectures..."
-headache = "You have a throbbing headache, take some paracetamol before you leave. ('swallow pill')\n"
+headache = "You have a throbbing headache, take some paracetamol before you leave. ('swallow')\n"
 
 -- Given a game state, and user input (as a list of words) return a new game state and a message for the user.
 process :: GameData -> [String] -> (GameData, String)
